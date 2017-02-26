@@ -11,8 +11,13 @@ PKGS_PATH="${ROOT_PATH}/pkgs"
 REPOS_PATH="${ROOT_PATH}/repos"
 CLEAR_VERSION=$(cat /usr/share/clear/version)
 
+if [ ! -w "${ROOT_PATH}" ]; then
+	echo "ROOT_PATH: ${ROOT_PATH} not writtable"
+	exit 1
+fi
+
 if [ ! -e /etc/mock/clear.conf ]; then
-	sudo tee /etc/mock/clear.conf >/dev/null <<-EOF 
+	sudo tee /etc/mock/clear.cfg >/dev/null <<-EOF 
 		config_opts['root'] = 'clear'
 		config_opts['target_arch'] = 'x86_64'
 		config_opts['legal_host_arches'] = ('x86_64',)
@@ -41,7 +46,7 @@ if [ ! -e /etc/mock/clear.conf ]; then
 		[clear]
 		name=Clear
 		failovermethod=priority
-		baseurl=https://download.clearlinux.org/releases/$releasever/clear/x86_64/os/
+		baseurl=https://download.clearlinux.org/releases/\$releasever/clear/x86_64/os/
 		enabled=1
 		gpgcheck=0
 
@@ -59,7 +64,7 @@ mkdir -p "${PKGS_PATH}/common"
 
 # Generate licenses file
 TMPDIR=$(mktemp -d)
-curl -L https://api.github.com/repos/spdx/license-list/tarball | tar -xz -C "${TMPDIR}"
+curl -L https://api.github.com/repos/spdx/license-list/tarball | tar -xz -C "${TMPDIR}" --strip 1
 rm -f "${TMPDIR}/Updating the SPDX Licenses.txt"
 
 ( cd "${TMPDIR}" && for lic in *.txt; do sha1sum "${lic}"; done | sed -e 's/  / | /' | sed 's/.txt//' ) > "${PKGS_PATH}/common/licenses"
